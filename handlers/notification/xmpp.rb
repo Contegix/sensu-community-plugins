@@ -5,6 +5,7 @@ require 'rubygems' if RUBY_VERSION < '1.9.0'
 require 'sensu-handler'
 require 'xmpp4r/client'
 require 'xmpp4r/muc'
+require 'rickshaw'
 include Jabber
 
 class XmppHandler < Sensu::Handler
@@ -12,6 +13,10 @@ class XmppHandler < Sensu::Handler
   def event_name
     @event['client']['name'] + '/' + @event['check']['name']
   end
+
+def uid
+    "#{@event['client']['name']}/#{@event['check']['name']}".to_sha1[0,8]
+end
 
   def handle
     xmpp_jid = settings['xmpp']['jid']
@@ -21,14 +26,17 @@ class XmppHandler < Sensu::Handler
     xmpp_server = settings['xmpp']['server']
 
     if @event['action'].eql?("resolve")
-#      body = "Sensu RESOLVED - [#{event_name}] - #{@event['check']['notification']}"
-      body = "Sensu RESOLVED - [#{event_name}] - #{@event['check']['output']} - #{@event['check']['notification']}"
+        action_word = "RESOLVED"
+    elseif @event['action'].eql?("create")
+        action_word = "CREATED"
     else
-#      body = "Sensu ALERT - [#{event_name}] - #{@event['check']['notification']}"
-      body = "Sensu ALERT - [#{event_name}] - #{@event['check']['output']} - #{@event['check']['notification']}"
-#      body = "Sensu ALERT - [#{event_name}] - #{@event['check']['output']}"
+        action_word = "NOTIFICATION"
     end
 
+    notification = "#{action_word}\t[#{event_name}]: #{@event['check']['notification']}\n\t#{@event['check']['output']}"
+
+    body = "[#{@uid}] #{@notification}"
+    
     jid = JID.new(xmpp_jid)
     cl = Client.new(jid)
     cl.connect(xmpp_server)
