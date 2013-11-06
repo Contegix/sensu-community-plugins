@@ -25,15 +25,7 @@ end
     xmpp_target_type = settings['xmpp']['target_type']
     xmpp_server = settings['xmpp']['server']
 
-    if @event['action'].eql?("resolve")
-        action_word = "RESOLVED"
-    elseif @event['action'].eql?("create")
-        action_word = "CREATED"
-    else
-        action_word = "NOTIFICATION"
-    end
-
-    notification = "#{action_word}\t[#{event_name}]: #{@event['check']['notification']}\n\t#{@event['check']['output']}"
+    notification = "#{@event['action'].capitalize}d\t[#{event_name}]: #{@event['check']['notification']}\n\t#{@event['check']['output']}"
 
     body = "[#{@uid}] #{@notification}"
     
