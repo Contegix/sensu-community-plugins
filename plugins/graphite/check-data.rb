@@ -113,7 +113,7 @@ class CheckGraphiteData < Sensu::Plugin::Check::CLI
   # Check the age of the data being processed
   def check_age
     if (Time.now.to_i - @end) > config[:allowed_graphite_age]
-      critical "Graphite data age is past allowed threshold (#{config[:allowed_graphite_age]} seconds)"
+      unknown "Graphite data age is past allowed threshold (#{config[:allowed_graphite_age]} seconds)"
     end
   end
 
@@ -143,9 +143,17 @@ class CheckGraphiteData < Sensu::Plugin::Check::CLI
         @step = ((@end - @start) / @raw_data['datapoints'].size.to_f).ceil
         nil
       rescue OpenURI::HTTPError
-        critical "Failed to connect to graphite server"
+        unknown "Failed to connect to graphite server"
       rescue NoMethodError
-        critical "No data for time period and/or target"
+        unknown "No data for time period and/or target"
+      rescue Errno::ECONNREFUSED
+        unknown "Connection refused when connecting to graphite server"
+      rescue Errno::ECONNRESET
+        unknown "Connection reset by peer when connecting to graphite server"
+      rescue EOFError
+        unknown "End of file error when reading from graphite server"
+      rescue Exception => e
+        unknown "An unknown error occured: #{e.inspect}"
       end
     end
   end
