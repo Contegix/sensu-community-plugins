@@ -19,49 +19,23 @@
 # 
 # Relevant MIB details:
 #
-#-- 1.3.6.1.4.1.674.10893.1.20.140.1.1.4
-#               virtualDiskState OBJECT-TYPE
-#                       SYNTAX INTEGER
-#                               {
-#                               ready(1),
-#                               failed(2),
-#                               online(3),
-#                               offline(4),
-#                               degraded(6),
-#                               verifying(7),
-#                               resynching(15),
-#                               regenerating(16),
-#                               failedRedundancy(18),
-#                               rebuilding(24),
-#                               formatting(26),
-#                               reconstructing(32),
-#                               initializing(35),
-#                               backgroundInit(36),
-#                               permanentlyDegraded(52)
-#                               }
+#-- 1.3.6.1.4.1.674.10893.1.20.140.1.1.19
+#               virtualDiskRollUpStatus OBJECT-TYPE
+#                       SYNTAX DellStatus
 #                       ACCESS read-only
 #                       STATUS mandatory
 #                       DESCRIPTION
-#                               "The current condition of this virtual disk
-#                               (which includes any member array disks.)
-#                               Possible states:
-#                                0: Unknown
-#                                1: Ready - The disk is accessible and has no known problems. 
-#                                2: Failed - Access has been lost to the data or is about to be lost.
-#                                3: Online
-#                                4: Offline - The disk is not accessible. The disk may be corrupted or intermittently unavailable. 
-#                                6: Degraded - The data on the virtual disk is no longer fault tolerant because one of the underlying disks is not online.
-#                               15: Resynching
-#                               16: Regenerating
-#                               24: Rebuilding
-#                               26: Formatting
-#                               32: Reconstructing
-#                               35: Initializing
-#                               36: Background Initialization
-#                               38: Resynching Paused
-#                               52: Permanently Degraded
-#                               54: Degraded Redundancy"
-#                       ::= { virtualDiskEntry 4 }
+#                               "Severity of the virtual disk state.
+#                               This is the combined status of the virtual disk and its 
+#                               components.
+#                               Possible values:
+#                               1: Other
+#                               2: Unknown
+#                               3: OK 
+#                               4: Non-critical 
+#                               5: Critical
+#                               6: Non-recoverable"
+#                       ::= { virtualDiskEntry 19 }
 
 require 'sensu-plugin/check/cli'
 require 'snmp'
@@ -80,9 +54,19 @@ class DellVirtualDiskStatus < Sensu::Plugin::Check::CLI
     :short => '-c COMMUNITY',
     :default => 'public'
 
+  option :warn,
+    :short => '-w WARN',
+    :proc => proc {|a| a.to_i },
+    :default => 4
+
+  option :crit,
+    :short => '-c CRIT',
+    :proc => proc {|a| a.to_i },
+    :default => 5
+
   def run
 
-    dell_virtualdisk_oid = "1.3.6.1.4.1.674.10893.1.20.140.1.1.4"
+    dell_virtualdisk_oid = "1.3.6.1.4.1.674.10893.1.20.140.1.1.19"
     dell_virtualdisk_state = []
     begin
       SNMP::Manager.open(:host => config[:host], :port => config[:port], :community => config[:community]) do |manager|
@@ -97,9 +81,9 @@ class DellVirtualDiskStatus < Sensu::Plugin::Check::CLI
     rescue => exception
       message "Unspecified error:\n#{exception.backtrace.join("\n")}"
     end
-    unknown if dell_virtualdisk_state.length == 0 or dell_virtualdisk_state.detect { |status| status == 0 }
-    critical if dell_virtualdisk_state.detect { |status| [2, 4, 6].include? status }
-    ok if dell_virtualdisk_state.detect { |status| [1, 3].include? status }
-    warning
+    unknown if dell_virtualdisk_state.length == 0 or dell_virtualdisk_state.detect { |status| status == 2 }
+    critical if dell_virtualdisk_state.detect { |status| status >= config[:crit] }
+    warning if dell_virtualdisk_state.detect { |status| status >= config[:warn] }
+    ok
   end
 end
