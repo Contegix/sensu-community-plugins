@@ -66,7 +66,7 @@
 require 'sensu-plugin/check/cli'
 require 'snmp'
 
-class DellVirtualDiskStatus < Sensu::Plugin::Check::CLI
+class DellVirtualDiskState < Sensu::Plugin::Check::CLI
 
   option :host,
     :short => '-h HOST',
