@@ -36,7 +36,7 @@ class DellPhysicalDisk < Sensu::Plugin::Check::CLI
     msg = "\n"
     physical_disks = []
     disks_ok = true
-    physical_disk_attributes = [ :ObjStatus, :EnclosureIndex, :DeviceSerialNumber, :DiskProductVendor, :ProductID, :PartNo]
+    physical_disk_attributes = [ :ObjStatus, :EnclosureIndex, :DeviceSerialNumber, :DiskProductVendor, :ProductID ]
     unknown message "Dell Utilities not available" unless File.executable? omreport_bin
     Nokogiri::XML( %x{#{omreport_bin} storage pdisk controller=0 -fmt xml} ).xpath('//DCStorageObject').each do |phy_disk|
       physical_disk = {}
