@@ -41,7 +41,11 @@ class DellPhysicalDisk < Sensu::Plugin::Check::CLI
     Nokogiri::XML( %x{#{omreport_bin} storage pdisk controller=0 -fmt xml} ).xpath('//DCStorageObject').each do |phy_disk|
       physical_disk = {}
       physical_disk_attributes.each do |attrib|
-        physical_disk[attrib] = phy_disk.children.at(attrib).text.strip
+      unless phy_disk.children.at(attrib).nil?
+          physical_disk[attrib] = phy_disk.children.at(attrib).text.strip
+        else
+          physical_disk[attrib] = ""
+        end
       end
       physical_disks << physical_disk
     end
